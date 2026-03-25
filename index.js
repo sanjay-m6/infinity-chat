@@ -4,220 +4,163 @@ const fs = require("fs");
 const http = require("http");
 const express = require("express");
 const cookieParser = require("cookie-parser");
-const multer = require("multer");
 const open = require("open").default;
 const { Server } = require("socket.io");
-const qrcode = require("qrcode");
-const { Client, LocalAuth } = require("whatsapp-web.js");
-const { getReplyAsJeet, setRuntimeApiKey, getApiKey } = require("./gpt");
 
-const API_KEY_COOKIE = "jeet_api_key";
-const COOKIE_MAX_AGE = 365 * 24 * 60 * 60 * 1000; // 1 year
+const { createWaClient, SETTINGS_FILE } = require("./waClient");
+const { setupSocket } = require("./socketManager");
+const { createIgClient } = require("./igClient");
 
-const FILES_FOLDER = path.join(__dirname, "files");
+const settingsRouter = require("./routes/settings");
+const whatsappRouter = require("./routes/whatsapp");
+const uploadRouter = require("./routes/upload");
+const schedulerRouter = require("./routes/scheduler");
+const exportRouter = require("./routes/export");
+const analyticsRouter = require("./routes/analytics");
+const webhooksRouter = require("./routes/webhooks");
+const instagramRouter = require("./routes/instagram");
+const { initScheduler } = require("./scheduler");
+
 const PORT = process.env.PORT || 3000;
-
-// Ensure files folder exists
-if (!fs.existsSync(FILES_FOLDER)) {
-  fs.mkdirSync(FILES_FOLDER, { recursive: true });
-}
-
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => cb(null, FILES_FOLDER),
-  filename: (req, file, cb) => {
-    const base = (file.originalname || `chat-${Date.now()}.txt`).replace(/[^a-zA-Z0-9._-]/g, "_") || "chat.txt";
-    cb(null, base);
-  },
-});
-const upload = multer({
-  storage,
-  limits: { fileSize: 10 * 1024 * 1024 },
-  fileFilter: (req, file, cb) => {
-    const ok = file.mimetype === "text/plain" || (file.originalname && file.originalname.toLowerCase().endsWith(".txt"));
-    cb(ok ? null : new Error("Only .txt files allowed"), ok);
-  },
-});
 
 const app = express();
 const server = http.createServer(app);
 const io = new Server(server);
 
-app.use(express.json());
+app.use(express.json({ limit: "1mb" }));
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
-app.use((req, res, next) => {
-  if (req.cookies && req.cookies[API_KEY_COOKIE] && !getApiKey()) {
-    setRuntimeApiKey(req.cookies[API_KEY_COOKIE]);
-  }
-  next();
-});
+
 const clientDist = path.join(__dirname, "client", "dist");
 const publicDir = path.join(__dirname, "public");
 const staticDir = fs.existsSync(clientDist) ? clientDist : publicDir;
 app.use(express.static(staticDir));
 
-app.get("/", (req, res) => {
+app.use("/api", settingsRouter);
+app.use("/api/whatsapp", whatsappRouter);
+app.use("/api", uploadRouter);
+app.use("/api", schedulerRouter);
+app.use("/api", exportRouter);
+app.use("/api", analyticsRouter);
+app.use("/api", webhooksRouter);
+app.use("/api/instagram", instagramRouter);
+
+app.get(/.*/, (req, res) => {
   const indexPath = fs.existsSync(clientDist)
     ? path.join(clientDist, "index.html")
     : path.join(publicDir, "index.html");
-  res.sendFile(indexPath);
-});
-
-app.get("/api/config", (req, res) => {
-  let hasChats = false;
-  let hasClosestPerson = false;
-  try {
-    if (fs.existsSync(FILES_FOLDER)) {
-      const files = fs.readdirSync(FILES_FOLDER).filter((f) => f.endsWith(".txt"));
-      hasChats = files.length > 0;
-      hasClosestPerson = files.includes("closest-person.txt");
-    }
-  } catch (_) { }
-  res.json({ hasApiKey: !!getApiKey(), hasChats, hasClosestPerson });
-});
-
-app.post("/api/clear-key", (req, res) => {
-  setRuntimeApiKey(null);
-  res.clearCookie(API_KEY_COOKIE);
-  res.json({ ok: true });
-});
-
-app.post("/api/set-key", (req, res) => {
-  const key = req.body && req.body.apiKey;
-  if (!key || typeof key !== "string" || !key.trim()) {
-    return res.status(400).json({ ok: false, error: "API key is required" });
+  if (fs.existsSync(indexPath)) {
+    res.sendFile(indexPath);
+  } else {
+    res.status(404).send("Frontend build not found. Please run 'npm run build' inside client/");
   }
-  const trimmed = key.trim();
-  setRuntimeApiKey(trimmed);
-  res.cookie(API_KEY_COOKIE, trimmed, {
-    httpOnly: true,
-    maxAge: COOKIE_MAX_AGE,
-    sameSite: "lax",
-  });
-  res.json({ ok: true });
 });
 
-app.get("/api/chats", (req, res) => {
+let initializedInstances = new Set();
+
+function initializeAllInstances() {
+  let instances = [{ id: 'default', name: 'Primary Account' }];
   try {
-    if (!fs.existsSync(FILES_FOLDER)) {
-      return res.json({ files: [] });
+    if (fs.existsSync(SETTINGS_FILE)) {
+      const settings = JSON.parse(fs.readFileSync(SETTINGS_FILE, "utf8"));
+      if (Array.isArray(settings.whatsappInstances) && settings.whatsappInstances.length > 0) {
+        instances = settings.whatsappInstances;
+      }
     }
-    const files = fs
-      .readdirSync(FILES_FOLDER)
-      .filter((f) => f.endsWith(".txt"))
-      .map((f) => ({ name: f, isClosest: f === "closest-person.txt" }));
-    res.json({ files });
   } catch (err) {
-    res.status(500).json({ ok: false, error: err.message });
+    console.error("Error loading instances from settings:", err.message);
   }
-});
 
-app.post("/api/upload-chat", upload.single("chat"), (req, res) => {
-  if (!req.file) {
-    return res.status(400).json({ ok: false, error: "No file uploaded. Choose a .txt chat export." });
-  }
-  const asClosest = req.body && (req.body.asClosest === "true" || req.body.asClosest === true);
-  let filename = req.file.filename;
-  if (asClosest) {
-    const targetPath = path.join(FILES_FOLDER, "closest-person.txt");
-    try {
-      fs.renameSync(req.file.path, targetPath);
-      filename = "closest-person.txt";
-    } catch (err) {
-      return res.status(500).json({ ok: false, error: "Failed to save as closest-person chat." });
-    }
-  }
-  res.json({
-    ok: true,
-    filename,
-    asClosest: !!asClosest,
-    message: asClosest
-      ? "Chat saved as your closest-person reference. Replies will match this style most closely."
-      : "Chat uploaded. It will be used as additional style reference.",
+  instances.forEach(inst => {
+    if (initializedInstances.has(inst.id)) return;
+    initializedInstances.add(inst.id);
+
+    console.log(`Initializing WhatsApp account: ${inst.name} (${inst.id})...`);
+    const wa = createWaClient(inst.id);
+    setupSocket(io, wa, inst.id);
+
+    wa.initialize().catch((err) => {
+      const message = err?.message || String(err || "Unknown error");
+      io.emit("connection_state", { state: "INIT_ERROR", message, clientId: inst.id });
+      console.error(`[${inst.id}] Initialize error:`, message);
+    });
+
+    wa.on("ready", () => {
+      console.log(`[${inst.id}] WhatsApp account ${inst.id} is ready!`);
+      // Initialize Instagram instances after WhatsApp is ready
+      initializeInstagramInstances();
+      initScheduler(wa, io, inst.id);
+    });
   });
-});
+}
 
-const client = new Client({
-  authStrategy: new LocalAuth(),
-  puppeteer: {
-    headless: true,
-    executablePath: process.env.PUPPETEER_EXECUTABLE_PATH || "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
-    args: ["--no-sandbox", "--disable-setuid-sandbox"],
-  },
-});
+let igInitialized = false;
 
-client.on("qr", async (qr) => {
+async function initializeInstagramInstances() {
+  if (igInitialized) return;
+  igInitialized = true;
+
+  let igInstances = [];
+  let oauthToken = null;
   try {
-    const dataUrl = await qrcode.toDataURL(qr, { margin: 2, width: 280 });
-    io.emit("qr", { dataUrl });
+    if (fs.existsSync(SETTINGS_FILE)) {
+      const settings = JSON.parse(fs.readFileSync(SETTINGS_FILE, "utf8"));
+      oauthToken = settings.instagramOAuth?.accessToken;
+      if (Array.isArray(settings.instagramInstances)) {
+        igInstances = settings.instagramInstances.filter(i => i.username && i.password);
+      }
+    }
   } catch (err) {
-    console.error("QR to image error:", err.message);
+    console.error("Error loading Instagram instances:", err.message);
   }
-});
 
-let isReady = false;
-
-client.on("ready", () => {
-  isReady = true;
-  io.emit("ready");
-});
-
-io.on("connection", (socket) => {
-  if (isReady) socket.emit("ready");
-});
-
-client.on("message", async (msg) => {
-  const text = (msg.body || "").trim();
-
-  let fromName = msg.from;
-  try {
-    const contact = await msg.getContact();
-    fromName = contact.name || contact.pushname || contact.shortName || msg.from;
-  } catch (_) { }
-
-  const payload = {
-    id: (msg.id && msg.id._serialized) ? msg.id._serialized : `${msg.from}-${Date.now()}`,
-    from: msg.from,
-    fromName: fromName || msg.from,
-    body: msg.body || "",
-    timestamp: msg.timestamp,
-    hasMedia: msg.hasMedia,
-  };
-
-  io.emit("message", payload);
-
-  // Never reply to status updates (replies would go to status)
-  if (msg.isStatus) return;
-
-  // Only reply in personal (direct) chats, not in groups or status
-  let isPrivate = false;
-  try {
-    const chat = await msg.getChat();
-    const chatId = (chat.id && chat.id._serialized) ? chat.id._serialized : String(chat.id || "");
-    const isStatusChat = /status@broadcast|@\w*broadcast\b/.test(chatId);
-    isPrivate = !chat.isGroup && !isStatusChat;
-  } catch (_) { }
-  if (!isPrivate) return;
-
-  if (!text) return;
-
-  if (!getApiKey()) {
-    await msg.reply("Bot is not configured: add your OpenAI API key in the web app first.");
+  if (oauthToken) {
+    console.log("[IG] Official OAuth token found, skipping private API startup login.");
     return;
   }
 
-  try {
-    const reply = await getReplyAsJeet(FILES_FOLDER, text);
-    await msg.reply(reply || "👍");
-  } catch (err) {
-    console.error("Jeet reply error:", err.message);
-    await msg.reply("Something went wrong, try again in a bit.");
-  }
-});
 
-server.listen(PORT, () => {
-  const url = `http://localhost:${PORT}`;
-  console.log(`Web app: ${url}`);
-  open(url).catch(() => { });
-  client.initialize();
-});
+  for (const inst of igInstances) {
+    try {
+      console.log(`Initializing Instagram account: ${inst.name || inst.username} (${inst.id})...`);
+      const wrapper = await createIgClient(inst.id, inst.username, inst.password);
+      io.emit('ig_ready', { clientId: inst.id, username: wrapper.username });
+      console.log(`[${inst.id}] Instagram ready!`);
+    } catch (err) {
+      console.error(`[${inst.id}] Instagram init error:`, err.message);
+      io.emit('ig_error', { clientId: inst.id, error: err.message });
+    }
+  }
+}
+
+function launchServer(startPort, maxAttempts = 15) {
+  let attempts = 0;
+
+  const tryListen = (port) => {
+    attempts += 1;
+    server.listen(port, () => {
+      const url = `http://localhost:${port}`;
+      console.log(`Web app: ${url}`);
+      if (port !== Number(PORT)) {
+        console.warn(`Port ${PORT} was busy, running on ${port} instead.`);
+      }
+      open(url).catch(() => { });
+      initializeAllInstances();
+    });
+  };
+
+  server.on("error", (err) => {
+    if (err && err.code === "EADDRINUSE" && attempts < maxAttempts) {
+      const nextPort = Number(startPort) + attempts;
+      console.warn(`Port ${nextPort - 1} is in use. Retrying on ${nextPort}...`);
+      setTimeout(() => tryListen(nextPort), 250);
+      return;
+    }
+    console.error("Server startup failed:", err);
+    process.exit(1);
+  });
+
+  tryListen(Number(startPort));
+}
+
+launchServer(PORT);

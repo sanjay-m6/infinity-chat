@@ -1,268 +1,267 @@
-import { useState, useEffect, useRef, useCallback } from 'react'
-import { io } from 'socket.io-client'
-import './App.css'
+import { useEffect, useCallback, useState } from 'react';
+import { io } from 'socket.io-client';
+import Sidebar from './components/Sidebar';
+import ChatArea from './components/ChatArea';
+import SettingsPanel from './components/SettingsPanel';
+import IGLayout from './components/instagram/IGLayout';
+import { useAppStore } from './store/useAppStore';
+import { useChatStore } from './store/useChatStore';
+import { useInstagramStore } from './store/useInstagramStore';
+import './index.css';
 
 function App() {
-  const [config, setConfig] = useState({ hasApiKey: false, hasChats: false, hasClosestPerson: false })
-  const [showApiKeyForm, setShowApiKeyForm] = useState(true)
-  const [apiKeyInput, setApiKeyInput] = useState('')
-  const [chats, setChats] = useState([])
-  const [uploadStatus, setUploadStatus] = useState({ text: '', type: '' })
-  const [uploading, setUploading] = useState(false)
-  const [qrUrl, setQrUrl] = useState(null)
-  const [ready, setReady] = useState(false)
-  const [messages, setMessages] = useState([])
-  const messagesContentRef = useRef(null)
-  const socketRef = useRef(null)
+  const {
+    config, setConfig,
+    ready, setReady,
+    connectionState, setConnectionState,
+    syncError, setSyncError,
+    showSettings, setShowSettings,
+    setQrUrl,
+    setStatuses, addStatus,
+    chats, setChats
+  } = useAppStore();
+
+  const {
+    contactsMeta,
+    messagesByChat,
+    selectedContactId, setSelectedContactId,
+    typingContacts, setTyping,
+    setContactsMeta, mergeMessages, updateMessageAck
+  } = useChatStore();
+
+  useEffect(() => {
+    if (!document.documentElement.classList.contains('dark')) {
+      document.documentElement.classList.add('dark');
+    }
+  }, []);
 
   const checkConfig = useCallback(async () => {
     try {
-      const res = await fetch('/api/config')
-      const data = await res.json()
-      setConfig({
-        hasApiKey: !!data.hasApiKey,
-        hasChats: !!data.hasChats,
-        hasClosestPerson: !!data.hasClosestPerson,
-      })
-      setShowApiKeyForm(!data.hasApiKey)
-    } catch {
-      setShowApiKeyForm(true)
-      setConfig({ hasApiKey: false, hasChats: false, hasClosestPerson: false })
-    }
-  }, [])
-
-  useEffect(() => {
-    checkConfig()
-  }, [checkConfig])
+      const res = await fetch('/api/config');
+      const data = await res.json();
+      setConfig({ hasApiKey: !!data.hasApiKey, hasChats: !!data.hasChats, hasClosestPerson: !!data.hasClosestPerson });
+      if (!data.hasApiKey) setShowSettings(true);
+    } catch { setShowSettings(true); }
+  }, [setConfig, setShowSettings]);
 
   const loadChats = useCallback(async () => {
+    try { const res = await fetch('/api/chats'); const data = await res.json(); setChats(data.files || []); } catch { setChats([]); }
+  }, [setChats]);
+
+  const loadBootstrap = useCallback(async () => {
     try {
-      const res = await fetch('/api/chats')
-      const data = await res.json()
-      setChats(data.files || [])
-    } catch {
-      setChats([])
-    }
-  }, [])
+      const { activeClientId } = useAppStore.getState();
+      const res = await fetch(`/api/whatsapp/bootstrap?maxChats=3000&clientId=${activeClientId}`);
+      const data = await res.json();
+      const cid = data?.clientId || activeClientId || 'default';
+      if (!data?.ok) { setSyncError(cid, data?.error || 'WhatsApp sync failed.'); return; }
+      setSyncError(cid, '');
+      setReady(cid, !!data.ready);
+
+      const chatMeta = {};
+      (data.chats || []).forEach((chat) => {
+        if (!chat?.id) return;
+        const compoundId = `${cid}:${chat.id}`;
+        chatMeta[compoundId] = {
+          ...chat,
+          id: compoundId,
+          pureId: chat.id,
+          clientId: cid,
+          name: chat.name || chat.id,
+          isGroup: !!chat.isGroup,
+          unreadCount: Number(chat.unreadCount || 0),
+          presence: chat.presence || { isOnline: null, lastSeen: null },
+          timestamp: chat.timestamp || 0,
+          lastMessageText: chat.lastMessageText || '',
+          lastMessageHasMedia: !!chat.lastMessageHasMedia
+        };
+        if (Array.isArray(chat.messages) && chat.messages.length > 0) mergeMessages(compoundId, chat.messages.map(m => ({ ...m, clientId: cid })));
+      });
+
+      setContactsMeta(chatMeta);
+      setStatuses(Array.isArray(data.statuses) ? data.statuses.map(s => ({ ...s, clientId: cid })) : []);
+
+      if (!selectedContactId && Object.keys(chatMeta).length > 0) {
+        const first = Object.values(chatMeta).sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0))[0];
+        if (first?.id) setSelectedContactId(first.id);
+      }
+    } catch { setSyncError('default', 'WhatsApp sync endpoint unavailable.'); }
+  }, [selectedContactId, setSyncError, setReady, setContactsMeta, mergeMessages, setStatuses, setSelectedContactId]);
+
+  useEffect(() => { checkConfig(); loadChats(); loadBootstrap(); }, [checkConfig, loadChats, loadBootstrap]);
 
   useEffect(() => {
-    loadChats()
-  }, [loadChats])
-
-  useEffect(() => {
-    const socket = io()
-    socketRef.current = socket
+    const socket = io();
     socket.on('qr', (data) => {
-      setReady(false)
-      setQrUrl(data?.dataUrl || null)
-    })
-    socket.on('ready', () => {
-      setQrUrl(null)
-      setReady(true)
-    })
+      const cid = data?.clientId || 'default';
+      setReady(cid, false);
+      setQrUrl(cid, data?.dataUrl || null);
+    });
+    socket.on('ready', (data) => {
+      const cid = data?.clientId || 'default';
+      setQrUrl(cid, null);
+      setReady(cid, true);
+      setConnectionState(cid, 'CONNECTED');
+      loadBootstrap();
+    });
+    socket.on('connection_state', ({ state, message, clientId }) => {
+      const cid = clientId || 'default';
+      const s = state || 'UNKNOWN';
+      setConnectionState(cid, s);
+      if (s === 'INIT_ERROR' || s === 'AUTH_FAILURE' || s === 'DISCONNECTED') {
+        setSyncError(cid, message || `WhatsApp ${s.toLowerCase().replace('_', ' ')}`);
+      }
+    });
+    socket.on('sync_snapshot', (payload) => {
+      const cid = payload?.clientId || 'default';
+      const incomingChats = payload?.chats || [];
+      const chatMeta = {};
+      incomingChats.forEach((chat) => {
+        if (!chat?.id) return;
+        const compoundId = `${cid}:${chat.id}`;
+        chatMeta[compoundId] = {
+          ...chat,
+          id: compoundId,
+          pureId: chat.id,
+          clientId: cid,
+          name: chat.name || chat.id,
+          isGroup: !!chat.isGroup,
+          unreadCount: Number(chat.unreadCount || 0),
+          presence: chat.presence || { isOnline: null, lastSeen: null },
+          timestamp: chat.timestamp || 0,
+          lastMessageText: chat.lastMessageText || '',
+          lastMessageHasMedia: !!chat.lastMessageHasMedia
+        };
+        if (Array.isArray(chat.messages) && chat.messages.length > 0) mergeMessages(compoundId, chat.messages.map(m => ({ ...m, clientId: cid })));
+      });
+      setContactsMeta(chatMeta);
+      if (Array.isArray(payload?.statuses)) setStatuses(payload.statuses.map(s => ({ ...s, clientId: cid })));
+    });
     socket.on('message', (msg) => {
-      setMessages((prev) => [...prev, msg])
-    })
-    return () => socket.disconnect()
-  }, [])
+      const waChatId = msg?.chatId || msg?.from || msg?.to;
+      if (!waChatId) return;
+      const cid = msg?.clientId || 'default';
+      const compoundId = `${cid}:${waChatId}`;
+      mergeMessages(compoundId, [{ ...msg, clientId: cid }]);
+      setContactsMeta((prev) => {
+        const existing = prev[compoundId] || { id: compoundId, pureId: waChatId, name: msg.fromName || waChatId, unreadCount: 0, presence: { isOnline: null, lastSeen: null }, clientId: cid };
+        const isCurrent = (useChatStore.getState().selectedContactId === compoundId);
+        const shouldIncrementUnread = !msg.isOutbound && !isCurrent;
+        return { [compoundId]: { ...existing, name: existing.name || msg.fromName || waChatId, timestamp: msg.timestamp || existing.timestamp || 0, lastMessageText: msg.body || existing.lastMessageText || '', lastMessageHasMedia: !!msg.hasMedia, unreadCount: Number(existing.unreadCount || 0) + (shouldIncrementUnread ? 1 : 0) } };
+      });
+    });
+    socket.on('chat_update', (chat) => {
+      if (!chat?.id) return;
+      const cid = chat?.clientId || 'default';
+      const compoundId = `${cid}:${chat.id}`;
+      setContactsMeta({ [compoundId]: { ...chat, id: compoundId, pureId: chat.id, clientId: cid } });
+    });
+    socket.on('message_ack', ({ id, ack, clientId }) => { if (!id) return; updateMessageAck(id, ack); });
+    socket.on('status_update', (status) => {
+      const cid = status?.clientId || 'default';
+      addStatus({ ...status, clientId: cid });
+    });
+    socket.on('bot_typing', ({ contactId, clientId }) => {
+      const compoundId = `${clientId || 'default'}:${contactId}`;
+      setTyping(compoundId, true);
+    });
+    socket.on('bot_typing_stop', ({ contactId, clientId }) => {
+      const compoundId = `${clientId || 'default'}:${contactId}`;
+      setTyping(compoundId, false);
+    });
+    return () => socket.disconnect();
+  }, [loadBootstrap, mergeMessages, setConnectionState, setContactsMeta, setQrUrl, setReady, setStatuses, setSyncError, setTyping, updateMessageAck, addStatus]);
 
   useEffect(() => {
-    if (!messages.length) return
-    const el = messagesContentRef.current
-    if (el) el.scrollTop = el.scrollHeight
-  }, [messages.length])
+    if (!selectedContactId) return;
+    const loadPresence = async () => {
+      try {
+        const [clientId, pureId] = selectedContactId.split(':');
+        const res = await fetch(`/api/whatsapp/presence/${encodeURIComponent(pureId)}?clientId=${clientId}`);
+        const data = await res.json();
+        if (!data?.ok) return;
+        setContactsMeta((prev) => {
+          const existing = prev[selectedContactId] || { id: selectedContactId, name: selectedContactId, clientId };
+          return { [selectedContactId]: { ...existing, presence: data.presence || { isOnline: null, lastSeen: null } } };
+        });
+      } catch { }
+    };
+    loadPresence();
+    const intervalId = setInterval(loadPresence, 15000);
+    return () => clearInterval(intervalId);
+  }, [selectedContactId, setContactsMeta]);
 
-  const saveApiKey = async () => {
-    const key = apiKeyInput.trim()
-    if (!key) return
-    try {
-      const res = await fetch('/api/set-key', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ apiKey: key }),
-      })
-      const data = await res.json()
-      if (data.ok) {
-        setApiKeyInput('')
-        setShowApiKeyForm(false)
-        checkConfig()
-      } else {
-        alert(data.error || 'Failed to save key')
-      }
-    } catch {
-      alert('Failed to save key')
-    }
-  }
+  const [isSyncingHistory, setIsSyncingHistory] = useState(false);
 
-  const clearApiKey = async () => {
-    try {
-      await fetch('/api/clear-key', { method: 'POST' })
-      setShowApiKeyForm(true)
-      checkConfig()
-    } catch {
-      alert('Failed to clear key')
-    }
-  }
+  useEffect(() => {
+    if (!selectedContactId) return;
+    const loadHistory = async () => {
+      setIsSyncingHistory(true);
+      try {
+        const [clientId, pureId] = selectedContactId.split(':');
+        const res = await fetch(`/api/whatsapp/messages/${encodeURIComponent(pureId)}?limit=100&clientId=${clientId}`);
+        const data = await res.json();
+        if (!data?.ok || !Array.isArray(data.messages)) return;
+        mergeMessages(selectedContactId, data.messages.map(m => ({ ...m, clientId })));
+      } catch { }
+      setIsSyncingHistory(false);
+    };
+    loadHistory();
+  }, [mergeMessages, selectedContactId]);
 
-  const handleUploadChat = async (e) => {
-    e.preventDefault()
-    const form = e.target
-    const fileInput = form.querySelector('input[type="file"]')
-    const asClosest = form.querySelector('input[name="asClosest"]')?.checked ?? false
-    if (!fileInput?.files?.[0]) {
-      setUploadStatus({ text: 'Choose a .txt file first.', type: 'error' })
-      return
-    }
-    const formData = new FormData()
-    formData.append('chat', fileInput.files[0])
-    formData.append('asClosest', asClosest ? 'true' : 'false')
-    setUploading(true)
-    setUploadStatus({ text: 'Uploading…', type: '' })
-    try {
-      const res = await fetch('/api/upload-chat', { method: 'POST', body: formData })
-      const data = await res.json()
-      if (data.ok) {
-        setUploadStatus({ text: data.message || 'Uploaded.', type: 'success' })
-        form.reset()
-        loadChats()
-        checkConfig()
-      } else {
-        setUploadStatus({ text: data.error || 'Upload failed.', type: 'error' })
-      }
-    } catch {
-      setUploadStatus({ text: 'Upload failed. Try again.', type: 'error' })
-    }
-    setUploading(false)
-  }
+  const { activeClientId, whatsappInstances, connectionStateMap, readyMap, syncErrorMap } = useAppStore();
 
-  const configError = !config.hasApiKey || !config.hasChats
+  const contactsList = Object.values(contactsMeta)
+    .filter(c => c.clientId === activeClientId || (!c.clientId && activeClientId === 'default'))
+    .map((c) => ({ id: c.id, name: c.name || c.id, lastMessageText: c.lastMessageText || '', lastMessageTime: c.timestamp || 0, lastMessageHasMedia: !!c.lastMessageHasMedia, unreadCount: Number(c.unreadCount || 0), presence: c.presence || { isOnline: null, lastSeen: null }, isGroup: !!c.isGroup }))
+    .sort((a, b) => (b.lastMessageTime || 0) - (a.lastMessageTime || 0));
+
+  const activeContact = contactsList.find(c => c.id === selectedContactId) || null;
+  const activeMessages = selectedContactId ? (messagesByChat[selectedContactId] || []) : [];
+
+  const { activePlatform, setActivePlatform } = useInstagramStore();
 
   return (
-    <div className="app-layout">
-      <aside className="settings-panel">
-        <h2>Settings</h2>
+    <div className="flex h-screen bg-wa-darkBg font-sans text-gray-100 overflow-hidden">
+      {/* Platform Switcher Tab */}
+      <div className="absolute top-0 left-1/2 -translate-x-1/2 z-50 flex bg-wa-gray/80 backdrop-blur-md rounded-b-xl overflow-hidden border border-gray-700/30 border-t-0 shadow-2xl">
+        <button
+          onClick={() => setActivePlatform('whatsapp')}
+          className={`px-5 py-2 text-xs font-bold tracking-wide transition-all ${activePlatform === 'whatsapp'
+              ? 'bg-wa-teal text-white'
+              : 'text-gray-400 hover:text-gray-200 hover:bg-wa-grayHover'
+            }`}
+        >
+          WhatsApp
+        </button>
+        <button
+          onClick={() => setActivePlatform('instagram')}
+          className={`px-5 py-2 text-xs font-bold tracking-wide transition-all ${activePlatform === 'instagram'
+              ? 'bg-gradient-to-r from-[#f09433] via-[#dc2743] to-[#bc1888] text-white'
+              : 'text-gray-400 hover:text-gray-200 hover:bg-wa-grayHover'
+            }`}
+        >
+          Instagram
+        </button>
+      </div>
 
-        <div className="api-key-wrap">
-          <div className="api-key-panel">
-            <label htmlFor="apiKeyInput">OpenAI API Key</label>
-            <p>Not found in environment. Enter your key below (stored in your browser cookie).</p>
-            <div className={`api-key-form ${showApiKeyForm ? '' : 'hidden'}`}>
-              <div className="api-key-row">
-                <input
-                  type="password"
-                  id="apiKeyInput"
-                  placeholder="sk-..."
-                  autoComplete="off"
-                  value={apiKeyInput}
-                  onChange={(e) => setApiKeyInput(e.target.value)}
-                />
-                <button type="button" className="btn btn-primary" onClick={saveApiKey}>
-                  Save
-                </button>
-              </div>
-            </div>
-            <div className={`api-key-success ${showApiKeyForm ? 'hidden' : ''}`}>
-              ✓ Key saved. Bot can reply now.
-              <button type="button" className="btn-link" onClick={() => setShowApiKeyForm(true)}>
-                Change key
-              </button>
-              <button type="button" className="btn-link" onClick={clearApiKey}>
-                Clear key
-              </button>
-            </div>
-          </div>
+      {activePlatform === 'instagram' ? (
+        <div className="flex-1 h-full pt-8">
+          <IGLayout />
         </div>
-
-        <div className="panel">
-          <div className={`qr-section ${qrUrl ? '' : 'hidden'}`}>
-            {qrUrl && <img src={qrUrl} alt="QR Code" />}
-            <p>Scan with WhatsApp on your phone</p>
+      ) : (
+        <>
+          <div className={`${selectedContactId ? 'hidden md:flex' : 'flex'} w-full md:w-[420px] shrink-0 pt-8`}>
+            <Sidebar contacts={contactsList} />
           </div>
-          <div className={`ready-section ${ready ? '' : 'hidden'}`}>
-            <span className="badge">WhatsApp logged in</span>
+          <div className={`flex-1 ${selectedContactId ? 'flex' : 'hidden md:flex'} h-full pt-8`}>
+            <ChatArea contact={activeContact} messages={activeMessages} isTyping={selectedContactId && typingContacts.has(selectedContactId)} isSyncingHistory={isSyncingHistory} />
           </div>
-        </div>
-
-        <div className="upload-chat-wrap">
-          <div className="upload-chat-panel">
-            {chats.length > 0 && (
-              <div className="chat-already-uploaded">
-                <span className="chat-uploaded-badge">✓ Chat already uploaded</span>
-                <p className="chat-uploaded-hint">Reference chats are stored locally. You can add more below.</p>
-              </div>
-            )}
-            <label>Upload a chat to improve replies</label>
-            <p>Export a WhatsApp chat (with your closest person) as .txt and upload it. The bot will use it to match your real style and tone.</p>
-            <form className="upload-form" onSubmit={handleUploadChat}>
-              <div className="upload-row">
-                <input type="file" accept=".txt" required />
-                <label className="checkbox-label">
-                  <input type="checkbox" name="asClosest" />
-                  Use as <strong>closest person</strong> chat (main style reference)
-                </label>
-              </div>
-              <button type="submit" className="btn btn-primary" disabled={uploading}>
-                Upload chat
-              </button>
-            </form>
-            <div className={`upload-status ${uploadStatus.type}`}>{uploadStatus.text}</div>
-            <div className="chats-list-wrap">
-              <span className="chats-list-label">Reference chats:</span>
-              <ul className="chats-list">
-                {chats.length ? (
-                  chats.map((f) => (
-                    <li key={f.name} className={f.isClosest ? 'closest' : ''}>
-                      {f.name}{f.isClosest ? ' (closest person)' : ''}
-                    </li>
-                  ))
-                ) : (
-                  <li>No chats uploaded yet. Upload a .txt export above.</li>
-                )}
-              </ul>
-            </div>
-          </div>
-        </div>
-      </aside>
-
-      <main className="messages-panel">
-        <header className="messages-panel-header">
-          <h1>Open trulychat — Incoming messages</h1>
-        </header>
-        <div className="messages-panel-content" ref={messagesContentRef}>
-          {configError && (
-            <div className="config-error-banner">
-              <span className="icon">⚠️</span>
-              <span>OpenAI key and personal chat are required to process SMS. Add your API key in Settings and upload a chat (e.g. closest person) to enable replies.</span>
-            </div>
-          )}
-          <div className="messages-wrap">
-            {messages.length === 0 && (
-              <p className="messages-empty">
-                No messages yet. When someone sends a WhatsApp message, it will appear here.
-              </p>
-            )}
-            <ul className="messages-list">
-              {messages.map((msg) => (
-                <li key={msg.id || `${msg.from}-${msg.timestamp}`}>
-                  <div className="message-avatar">
-                    {(msg.fromName || msg.from || '?').charAt(0).toUpperCase()}
-                  </div>
-                  <div className="message-body-wrap">
-                    <div className="from">{msg.fromName || msg.from || 'Unknown'}</div>
-                    <div className="body">{msg.body || '(no text)'}</div>
-                    <div className="time">
-                      {msg.timestamp ? new Date(msg.timestamp * 1000).toLocaleString() : ''}
-                    </div>
-                    {msg.hasMedia && <div className="media-badge">📎 Media attached</div>}
-                  </div>
-                </li>
-              ))}
-            </ul>
-          </div>
-        </div>
-      </main>
+        </>
+      )}
+      {showSettings && <SettingsPanel checkConfig={checkConfig} loadChats={loadChats} />}
     </div>
-  )
+  );
 }
 
-export default App
+export default App;

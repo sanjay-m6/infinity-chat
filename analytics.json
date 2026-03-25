@@ -1,0 +1,89 @@
+{
+  "totalSent": 575,
+  "totalReceived": 310,
+  "aiReplies": 515,
+  "tokenEstimate": 103000,
+  "perChat": {
+    "919342990311@c.us": {
+      "sent": 0,
+      "received": 4,
+      "aiReplies": 0
+    },
+    "168217343443150@lid": {
+      "sent": 0,
+      "received": 7,
+      "aiReplies": 0
+    },
+    "120363239614650521@g.us": {
+      "sent": 6,
+      "received": 5,
+      "aiReplies": 0
+    },
+    "98140489265193@lid": {
+      "sent": 2,
+      "received": 2,
+      "aiReplies": 0
+    },
+    "default:187569862136027@lid": {
+      "sent": 0,
+      "received": 3,
+      "aiReplies": 0
+    },
+    "default:76541383950579@lid": {
+      "sent": 62,
+      "received": 29,
+      "aiReplies": 58
+    },
+    "default:164205424599150@lid": {
+      "sent": 486,
+      "received": 243,
+      "aiReplies": 442
+    },
+    "default:98140489265193@lid": {
+      "sent": 3,
+      "received": 4,
+      "aiReplies": 3
+    },
+    "default:918838089738@c.us": {
+      "sent": 9,
+      "received": 5,
+      "aiReplies": 5
+    },
+    "default:156204152127588@lid": {
+      "sent": 0,
+      "received": 1,
+      "aiReplies": 0
+    },
+    "default:120363239614650521@g.us": {
+      "sent": 7,
+      "received": 7,
+      "aiReplies": 7
+    }
+  },
+  "perProvider": {
+    "nvidia": {
+      "replies": 515,
+      "tokens": 103000
+    }
+  },
+  "dailyActivity": {
+    "2026-03-24": {
+      "sent": 535,
+      "received": 280,
+      "aiReplies": 481
+    },
+    "2026-03-25": {
+      "sent": 40,
+      "received": 30,
+      "aiReplies": 34
+    }
+  },
+  "accounts": {
+    "default": {
+      "totalSent": 567,
+      "totalReceived": 292,
+      "aiReplies": 515,
+      "tokenEstimate": 103000
+    }
+  }
+}

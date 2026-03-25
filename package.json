@@ -1,5 +1,5 @@
 {
-    "name": "open-truly-chat",
+    "name": "infinity-chat",
     "version": "1.0.0",
     "main": "index.js",
     "scripts": {
@@ -20,6 +20,7 @@
         "dotenv": "^17.2.3",
         "express": "^5.2.1",
         "fs": "^0.0.1-security",
+        "instagram-private-api": "^1.46.1",
         "multer": "^2.0.2",
         "open": "^11.0.0",
         "openai": "^6.18.0",
@@ -27,7 +28,7 @@
         "qrcode": "^1.5.4",
         "qrcode-terminal": "^0.12.0",
         "socket.io": "^4.8.3",
-        "whatsapp-web.js": "^1.34.6"
+        "whatsapp-web.js": "github:pedroslopez/whatsapp-web.js#main"
     },
     "devDependencies": {
         "nodemon": "^3.1.0",

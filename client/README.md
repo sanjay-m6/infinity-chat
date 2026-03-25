@@ -1,16 +1,35 @@
-# React + Vite
+# Infinity Chat - Frontend (React + Vite)
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+This directory contains the React-based user interface for Infinity Chat. It is powered by **Vite** for ultra-fast development and optimized production builds.
 
-Currently, two official plugins are available:
+## 🛠️ Developer Setup
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+```bash
+# Navigate to client directory
+cd client
 
-## React Compiler
+# Install dependencies
+npm install
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+# Start development server
+npm run dev
+```
 
-## Expanding the ESLint configuration
+The frontend will be available at `http://localhost:5173`. For the API to work, ensure the backend is running at `http://localhost:3000`.
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+## 📦 Building for Production
+
+```bash
+npm run build
+```
+The output will be in `dist/`. The backend is configured to serve this directory automatically.
+
+## 🎨 UI Architecture
+
+- **Context Stores**: Uses `zustand` for state management (`useInstagramStore`, `useWhatsAppStore`).
+- **Components**: Atomic components for chat area, sidebar, and settings.
+- **Theming**: Sleek Dark Mode with custom CSS vars for branded "Infinity" aesthetic.
+
+## 📝 Notes
+- Ensure `.env` in the root is configured before attempting to connect Instagram.
+- Check browser console for detailed WebSocket connection logs.

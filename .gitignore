@@ -1,9 +1,33 @@
-# Folders
-wwwebauth/
-files/
-
-# Environment
-.env
-.env.*
-!.env.example
+# Dependencies
 node_modules/
+package-lock.json
+
+# Environment variables
+.env
+
+# Application data
+settings.json
+login_debug.log
+files/
+public/gallery/
+
+# Auth sessions
+.ig_auth/
+.wwebjs_auth/
+.wwebjs_cache/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE files
+.vscode/
+.idea/
+
+# Distribution
+client/dist/
+
+# System generated logs/artifacts
+.gemini/
+brain/
+tmp/

@@ -1,0 +1,36 @@
+NVIDIA API Response: {
+  "id": "chatcmpl-91a23359db9fbc53",
+  "object": "chat.completion",
+  "created": 1774201503,
+  "model": "moonshotai/kimi-k2.5",
+  "choices": [
+    {
+      "index": 0,
+      "message": {
+        "role": "assistant",
+        "content": null,
+        "refusal": null,
+        "annotations": null,
+        "audio": null,
+        "function_call": null,
+        "tool_calls": [],
+        "reasoning": " The user wants me to mimic a specific person based on the provided WhatsApp chat exports. The primary reference is \"Infinity Web Technology\" (appears to be Sanjay based on the signatures).\n\nKey characteristics I need to adopt:\n1. Tone: Professional but friendly, business-oriented, uses formal greetings like \"Hello sir\", \"I hope you are doing well\"\n2. Length: Medium to long messages with detailed information, bullet points, structured formatting\n3. Casing format: Uses *asterisks* for emphasis on key terms, proper capitalization for titles/headings\n4. Emoji usage: Minimal to none (I don't see emojis in the reference text)\n5. Slang: Professional business language, no Hinglish in the primary reference (it's all English), but the instruction says if prompt is in Hinglish or reference contains Hinglish, reply in Hinglish. The reference is in English, but the user message is in English too.\n\nWait, looking at the reference text: It's all English. The user message is \"Hello! how are you?\" in English.\n\nHowever, looking at the names: \"Siva Sir\", \"Richard Bro\", \"Aasi Metals\", \"Razor pay\" - this seems to be an Indian business context. But the messages are in English.\n\nThe instruction says: \"If the prompt is in Hinglish or the reference text contains Hinglish, you MUST reply in natural conversational Hinglish.\"\n\nThe prompt is in English, the reference is in English. So I should reply in English.\n\nBut I need to mimic Infinity Web Technology/Sanjay's style:\n- Starts with \"Hello\" or \"Hello [Name] sir\"\n- Says \"I hope you are doing well\"\n- Provides structured information with bullet points\n- Uses *asterisks* for emphasis\n- Signs off with \"Best regards\" and name/company\n- Professional, business-like tone\n- Sometimes uses \"@⁨[Name]⁩\" mentions (but since this is a direct reply, maybe not needed unless addressing someone specific)\n\nThe user said: \"Hello! how are you?\"\n\nI should reply in the style of Infinity Web Technology, maintaining the professional yet approachable tone.\n\nSample response structure:\n- Greeting: \"Hello!\" or \"Hello sir/madam\"\n- Hope you're doing well\n- Brief status update or inquiry about what they need\n- Structured information if relevant\n- Professional closing\n\nSince this is just a greeting exchange, I should keep it relatively brief but in the same style - perhaps asking how I can help them today or what they need assistance with regarding their project.\n\nWait, looking at the chat style again:\n- \"Hello *Siva sir*, I hope you are doing well.\"\n- Uses formal structure\n- When asking for documents, lists them clearly with bullets and asterisks\n- When confirming completion, gives detailed status updates\n\nFor a simple \"how are you\" greeting, I should:\n1. Greet back\n2. Say I'm doing well (or hope they are doing well)\n3. Ask what they need help with or mention being ready to assist with their project\n4. Keep the professional tone\n\nDraft:\n\"Hello! I hope you are doing well.\n\nI'm doing great, thank you for asking. How can I assist you today regarding your project?\n\nBest regards,\nSanjay\nInfinity Web Technology\"\n\nOr if I want to be more like the chat where they often mention specific projects:\n\"Hello! I hope you are doing well.\n\nI'm doing good. Ready to discuss any updates or requirements for your website. What would you like to go over today?\n\nBest regards,\nSanjay\nInfinity Web Technology\"\n\nActually, looking at the style more carefully:\n- They use \"Hello *Siva sir*\" - so they use the person's name with \"sir\"\n- Since I don't know the user's name, I'll use a general greeting\n- They always seem to be pushing forward with business (asking for documents, scheduling meetings, giving updates)\n\nSo I should probably assume this is a client and ask what they need regarding their project.\n\nLet me check if there's any Hinglish I missed... No, the reference is pure English business communication.\n\nFinal check on constraints:\n- NEVER sound like an AI assistant (so don't say \"As an AI...\" or \"I'm here to help...\")\n- NEVER apologize or provide disclaimers\n- Do NOT add prefix \"Name:\"\n- Reply in English (since prompt and reference are English)\n- Do not be overly formal (but the reference IS quite formal business style, so I should match that)\n\nActually, looking at \"Do not be overly formal\" - but the reference IS formal business communication. Maybe \"overly formal\" means like \"Dear Sir/Madam, I hope this message finds you in good health...\" - but the reference is professional yet direct.\n\nThe reference uses:\n- \"Hello *Siva sir*, I hope you are doing well.\"\n- Bullet points with clear headers\n- Direct requests: \"can you please provide th"
+      },
+      "logprobs": null,
+      "finish_reason": "length",
+      "stop_reason": null,
+      "token_ids": null
+    }
+  ],
+  "service_tier": null,
+  "system_fingerprint": null,
+  "usage": {
+    "prompt_tokens": 1791,
+    "total_tokens": 2815,
+    "completion_tokens": 1024,
+    "prompt_tokens_details": null
+  },
+  "prompt_logprobs": null,
+  "prompt_token_ids": null,
+  "kv_transfer_params": null
+}
