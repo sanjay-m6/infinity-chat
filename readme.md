@@ -1,102 +1,111 @@
-# Infinity Chat (formerly Open-TrulyChat)
+<p align="center">
+  <img src="assets/banner.png" width="100%" alt="Infinity Chat Banner" />
+</p>
 
-**Infinity Chat** is a high-performance, self-hosted multi-channel AI automation platform. It allows you to automate WhatsApp and Instagram with a personalized AI digital twin that learns from your chat history.
+<h1 align="center">♾️ Infinity Chat</h1>
 
----
+<p align="center">
+  <strong>The Ultimate Multi-Channel AI Twin Platform</strong>
+</p>
 
-## 🚀 Key Features
-
-- **Multi-Channel Support**: Seamless integration for WhatsApp and Instagram (Private API + Graph API).
-- **Style Mimicry**: Learns your unique texting voice from `.txt` chat exports.
-- **Multimodal AI (Vision)**: Context-aware image analysis for incoming media.
-- **Advanced Dashboard**: Real-time message monitoring, connection states, and analytics.
-- **Privacy First**: Local session management and secure configuration.
-- **Provider Agility**: Support for OpenAI, Gemini, Nvidia, and OpenRouter.
-
----
-
-## ⚙️ Prerequisites
-
-- **Node.js**: v18.x or higher
-- **Browser**: Chrome or Brave installed (required for WhatsApp Puppeteer)
-- **API Keys**: OpenAI, Gemini, or Nvidia API key
-- **Meta Developer Account**: For Instagram Graph API integration (optional)
+<p align="center">
+  <img src="https://img.shields.io/badge/version-1.0.0-blue.svg" alt="Version" />
+  <img src="https://img.shields.io/badge/license-MIT-green.svg" alt="License" />
+  <img src="https://img.shields.io/badge/platform-WhatsApp%20%7C%20Instagram-purple.svg" alt="Platforms" />
+  <img src="https://img.shields.io/badge/AI-Multimodal-red.svg" alt="AI Type" />
+</p>
 
 ---
 
-## 🛠️ Installation & Setup
+## 🌟 Overview
 
-### 1. Clone the Repository
-```bash
-git clone <your-repo-url>
-cd open-truly-chat
+**Infinity Chat** transforms your digital communication. It's not just a bot; it's a high-performance, self-hosted AI digital twin that masters your unique texting style and automates your presence across major social channels with absolute precision.
+
+### Why Infinity Chat?
+- **🧠 Identity Capture**: Learns your slang, typos, and personality from chat exports.
+- **👁️ Multimodal Vision**: "Eyes" for your AI—it sees and analyzes images sent by users.
+- **🚀 Dual-Channel Power**: Simultaneous automation for WhatsApp and Instagram.
+- **🎨 Persona Engine**: Switch between "Professional Executive," "Toxic Bestie," or "Gen-Z" modes instantly.
+
+---
+
+## 🛠️ Architecture
+
+```mermaid
+graph TD
+    User((User)) --> Channels{Channels}
+    Channels --> |WhatsApp| WA[WhatsApp Web Client]
+    Channels --> |Instagram| IG[Instagram Graph API]
+    WA --> SM[Socket Manager]
+    IG --> SM
+    SM --> AS[AI Orchestrator]
+    AS --> |Vision/Text| LLM[AI Providers: OpenAI/Nvidia/Gemini]
+    LLM --> AS
+    AS --> SM
+    SM --> Dashboard[Real-time UI]
 ```
 
-### 2. Install Dependencies
-```bash
-# Root dependencies
-npm install
+---
 
-# Client dependencies
-cd client
-npm install
-cd ..
+## 🚀 Quick Start
+
+### 1. Installation
+```bash
+# Clone and install
+git clone https://github.com/sanjay-m6/infinity-chat.git
+cd infinity-chat
+npm run install:all
 ```
 
-### 3. Environment Configuration
-Create a `.env` file in the root directory:
+### 2. Configuration
+Create a `.env` file with your credentials:
 ```env
 PORT=3000
-MONGODB_URI=your_mongodb_uri # If using DB storage
-# Instagram Graph API
-INSTAGRAM_CLIENT_ID=your_facebook_app_id
-INSTAGRAM_CLIENT_SECRET=your_facebook_app_secret
-INSTAGRAM_REDIRECT_URI=http://localhost:3000/api/instagram/auth/callback
+OPENAI_API_KEY=sk-...
+INSTAGRAM_CLIENT_ID=your_app_id
+INSTAGRAM_CLIENT_SECRET=your_app_secret
 ```
 
-### 4. Build the Frontend
+### 3. Launch
 ```bash
+# Build frontend and start backend
 npm run build
+npm start
 ```
 
 ---
 
-## 🚀 Running the Application
+## 📸 Instagram Integration Guide
 
-### Development Mode
-```bash
-npm run dev
-```
-
-### Production Mode (PM2 Recommended)
-```bash
-npm run pm2:start
-```
+The 1.0 release introduces official **Instagram Graph API** support:
+1.  **Meta Dev Portal**: Create a "Business" app and add "Instagram Graph API".
+2.  **Redirect URI**: Set to `http://localhost:3000/api/instagram/auth/callback`.
+3.  **Live Mode**: Ensure your app is in Live mode or add test users in the dashboard.
 
 ---
 
-## 📸 Instagram Graph API Setup
+## 🧪 AI Persona Gallery
 
-1. Create a Facebook Developer App (Business or Consumer type).
-2. Add **Facebook Login for Business** and **Instagram Graph API** products.
-3. Configure the **Valid OAuth Redirect URI** in Facebook Login settings.
-4. Add your App ID and Secret to `.env`.
-5. Authenticate via the "Connect Instagram" button in the dashboard.
-
----
-
-## 🧪 Advanced Usage
-
-### AI Personas
-Configure your bot's personality in `settings.json` or via the UI:
-- `toxic_flirty`: Aggressive yet charming "enemies to lovers" vibe.
-- `professional`: Precise, corporate, and authority-driven.
-- `genz`: unhinged brainrot slang (no cap).
-
-### Image Analysis (Vision)
-When a user sends an image, the bot automatically triggers vision processing to "see" the content and respond contextually based on your active persona.
+| Persona | Vibe | Best For |
+| :--- | :--- | :--- |
+| **Toxic Flirty** | 😈 Sass & Charm | Playful interactions and bantering with close friends. |
+| **Professional** | 👔 Cold & Precise | Business inquiries, formal networking, and authority. |
+| **Gen-Z** | 💀 Brainrot & No Cap | Maximum relatability using current internet subculture. |
 
 ---
 
-## 📝 License
-Built with ❤️ by Infinity. Dual-licensed under MIT.
+## 💻 Tech Stack
+
+- **Frontend**: React 18, Vite, Tailwind CSS, Lucide Icons.
+- **Backend**: Node.js, Express, Socket.io.
+- **Automation**: Puppeteer (WhatsApp), Official Graph API (Instagram).
+- **Intelligence**: OpenAI SDK (compatible with Nvidia/OpenRouter).
+
+---
+
+## 📝 License & Security
+
+- **Dual Licensed**: MIT / Personal Use.
+- **Privacy**: All sessions and logs are stored locally. No mid-stream data collection.
+
+Built with 🖤 by **Infinity Team**.

@@ -1,35 +1,56 @@
-# Infinity Chat - Frontend (React + Vite)
+<h1 align="center">🎨 Infinity Chat UI</h1>
 
-This directory contains the React-based user interface for Infinity Chat. It is powered by **Vite** for ultra-fast development and optimized production builds.
+<p align="center">
+  <strong>High-Performance React Interface for AI Multi-Channel Chat</strong>
+</p>
 
-## 🛠️ Developer Setup
+---
+
+## 🚀 Development Mode
+
+The frontend is built with **React 18** and **Vite** for maximum speed.
 
 ```bash
-# Navigate to client directory
+# Install and start
 cd client
-
-# Install dependencies
 npm install
-
-# Start development server
 npm run dev
 ```
 
-The frontend will be available at `http://localhost:5173`. For the API to work, ensure the backend is running at `http://localhost:3000`.
+- **Dashboard**: `http://localhost:5173`
+- **Backend Link**: Ensure the core server is running on `http://localhost:3000`.
 
-## 📦 Building for Production
+---
+
+## 🏗️ UI Architecture
+
+This frontend is designed for real-time responsiveness and low latency:
+
+- **⚡ State Management**: Powered by `Zustand` with persistent storage for session tokens and UI preferences.
+- **🎨 Styling**: Vanilla **Tailwind CSS v4** with a custom design system focused on dark-mode glassmorphism.
+- **🔌 Real-time**: Bi-directional communication via `Socket.io-client` for instant message updates.
+- **🧩 Component Strategy**: Atomic design using modular components in `src/components/`.
+
+---
+
+## 📦 Production Delivery
+
+To package the UI for production use:
 
 ```bash
 npm run build
 ```
-The output will be in `dist/`. The backend is configured to serve this directory automatically.
 
-## 🎨 UI Architecture
+This generates a highly optimized `dist/` folder. The Infinity Chat backend is pre-configured to serve these static assets automatically on port 3000.
 
-- **Context Stores**: Uses `zustand` for state management (`useInstagramStore`, `useWhatsAppStore`).
-- **Components**: Atomic components for chat area, sidebar, and settings.
-- **Theming**: Sleek Dark Mode with custom CSS vars for branded "Infinity" aesthetic.
+---
 
-## 📝 Notes
-- Ensure `.env` in the root is configured before attempting to connect Instagram.
-- Check browser console for detailed WebSocket connection logs.
+## 🛠️ Key Components
+
+- **`ChatArea.jsx`**: Handles multi-channel message rendering and AI response streaming.
+- **`Sidebar.jsx`**: Dynamic account switcher and contact list with status indicators.
+- **`SettingsPanel.jsx`**: Central hub for AI provider configuration and persona selection.
+
+---
+
+Built with 🖤 for the **Infinity** ecosystem.
