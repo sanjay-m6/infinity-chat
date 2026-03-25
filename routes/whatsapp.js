@@ -118,35 +118,50 @@ router.get("/media/:msgId", async (req, res) => {
 });
 
 router.post("/logout", async (req, res) => {
+  const id = req.query?.clientId || req.body?.clientId || 'default';
   try {
-    const client = getTargetClient(req);
+    const client = clients.get(id);
+    if (!client) return res.status(404).json({ error: "Client not found" });
     await client.logout();
     res.json({ ok: true });
   } catch (err) {
-    res.status(500).json({ ok: false, error: err.message });
+    console.error(`Logout error for ${id}:`, err);
+    // If logout fails, we might still want to destroy the client to allow fresh start
+    try {
+      const client = clients.get(id);
+      if (client) await client.destroy();
+    } catch (_) { }
+    res.status(500).json({ ok: false, error: "Logout failed but client was destroyed for safety." });
   }
 });
 
 router.post("/clear-session", async (req, res) => {
   const { clientId } = req.body;
+  const id = clientId || 'default';
   try {
-    res.json({ ok: true, message: "Session cleanup started." });
+    console.log(`[Session] Clearing session for: ${id}`);
 
-    setTimeout(async () => {
-      try {
-        const client = clients.get(clientId || 'default');
-        if (client) await client.destroy();
-      } catch (_) { }
+    // 1. Attempt to stop the client gracefully
+    try {
+      const client = clients.get(id);
+      if (client) {
+        await client.destroy().catch(() => { });
+        clients.delete(id);
+      }
+    } catch (_) { }
 
-      const id = clientId || 'default';
-      const authPath = path.join(__dirname, '..', `.wwebjs_auth/session-${id}`);
-      const cachePath = path.join(__dirname, '..', `.wwebjs_cache/session-${id}`);
+    // 2. Clear auth and cache paths
+    const authPath = path.join(__dirname, '..', `.wwebjs_auth/session-${id}`);
+    const cachePath = path.join(__dirname, '..', `.wwebjs_cache/session-${id}`);
 
-      try { if (fs.existsSync(authPath)) fs.rmSync(authPath, { recursive: true, force: true }); } catch (_) { }
-      try { if (fs.existsSync(cachePath)) fs.rmSync(cachePath, { recursive: true, force: true }); } catch (_) { }
+    // Give it a small delay for OS to release locks
+    setTimeout(() => {
+      try { if (fs.existsSync(authPath)) fs.rmSync(authPath, { recursive: true, force: true }); } catch (e) { console.error("Auth cleanup err:", e); }
+      try { if (fs.existsSync(cachePath)) fs.rmSync(cachePath, { recursive: true, force: true }); } catch (e) { console.error("Cache cleanup err:", e); }
+      console.log(`[Session] Cleanup complete for ${id}.`);
+    }, 1000);
 
-      console.log(`[Session] Cleaned up ${id}. Restart recommended.`);
-    }, 500);
+    res.json({ ok: true, message: "Session cleanup initiated. Folder will be deleted shortly." });
   } catch (err) {
     res.status(500).json({ ok: false, error: err.message });
   }

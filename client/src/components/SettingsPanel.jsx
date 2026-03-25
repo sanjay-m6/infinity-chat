@@ -112,7 +112,11 @@ export default function SettingsPanel({ checkConfig, loadChats }) {
   };
 
   const handleRemoveAccount = (id) => {
-    if (id === 'default') return alert('Cannot remove primary account');
+    if (id === 'default') {
+      if (!window.confirm(`Reset Primary Account? This will clear all session data and you will need to re-scan the QR code.`)) return;
+      handleClearSession('default');
+      return;
+    }
     if (!window.confirm(`Remove account ${id}? This will also delete its session data.`)) return;
     const updated = whatsappInstances.filter(i => i.id !== id);
     setWhatsappInstances(updated);
@@ -410,9 +414,11 @@ export default function SettingsPanel({ checkConfig, loadChats }) {
                                 <span className={`text-xs font-medium uppercase tracking-tighter ${ready ? 'text-green-500' : 'text-wa-grayLighter'}`}>{connState}</span>
                               </div>
                               <div className="flex gap-2">
-                                <button onClick={() => handleLogout(inst.id)} className="p-2 text-wa-grayLighter hover:text-red-400 transition-colors" title="Logout"><svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" /></svg></button>
-                                <button onClick={() => handleClearSession(inst.id)} className="p-2 text-wa-grayLighter hover:text-red-500 transition-colors" title="Clear Cache"><svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg></button>
-                                <button onClick={() => handleRemoveAccount(inst.id)} className="p-2 text-wa-grayLighter hover:text-red-600 transition-colors" title="Delete Account"><svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg></button>
+                                <button onClick={() => handleLogout(inst.id)} className="p-2 text-wa-grayLighter hover:text-orange-400 transition-colors" title="Logout Session"><svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" /></svg></button>
+                                <button onClick={() => handleClearSession(inst.id)} className="p-2 text-wa-grayLighter hover:text-red-500 transition-colors" title="Force Clear Session (Fix Stuck QR)"><svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg></button>
+                                {inst.id !== 'default' && (
+                                  <button onClick={() => handleRemoveAccount(inst.id)} className="p-2 text-wa-grayLighter hover:text-red-600 transition-colors" title="Delete Account"><svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg></button>
+                                )}
                               </div>
                             </div>
                             {!ready && qrUrl && (
@@ -482,9 +488,9 @@ export default function SettingsPanel({ checkConfig, loadChats }) {
                     <div className="border border-red-900/30 rounded-xl p-5 bg-red-900/5">
                       <h3 className="font-bold text-red-400 mb-2">Danger Zone</h3>
                       <p className="text-xs text-red-500/60 mb-4">Destructive actions that cannot be undone.</p>
-                      <button onClick={handleClearSession} className="flex items-center justify-center gap-2 w-full px-4 py-2.5 bg-red-900/20 text-red-400 rounded-lg hover:bg-red-900/40 border border-red-900/30 transition-colors text-sm font-medium">
+                      <button onClick={() => handleClearSession(activeClientId)} className="flex items-center justify-center gap-2 w-full px-4 py-2.5 bg-red-900/20 text-red-400 rounded-lg hover:bg-red-900/40 border border-red-900/30 transition-colors text-sm font-medium">
                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
-                        Clear Session &amp; Cache
+                        Force Clear Active Session
                       </button>
                       <span className="block text-[11px] text-red-500/50 mt-2">Deletes WhatsApp auth data, cache, and restarts the server. You will need to scan QR again.</span>
                     </div>

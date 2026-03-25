@@ -1,6 +1,6 @@
 module.exports = {
     apps: [{
-        name: 'open-truly-chat',
+        name: 'infinity-chat',
         script: 'index.js',
         instances: 1,
         autorestart: true,

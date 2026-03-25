@@ -351,7 +351,7 @@ function setupSocket(io, targetClient, clientId = 'default') {
             if (mediaUrl) {
               const { MessageMedia } = require("whatsapp-web.js");
               const media = await MessageMedia.fromUrl(mediaUrl, { unsafeMime: true });
-              await targetClient.sendMessage(msg.from, media, { sendMediaAsSticker: true, stickerName: 'AI Bot', stickerAuthor: 'Infinity' });
+              await targetClient.sendMessage(msg.from, media, { sendMediaAsSticker: true, stickerName: 'Infinity Chat', stickerAuthor: 'Sanjay' });
             }
           } catch (e) { console.error("Sticker error:", e); }
         }

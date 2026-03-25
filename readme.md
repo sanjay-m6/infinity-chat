@@ -5,7 +5,7 @@
 <h1 align="center">♾️ Infinity Chat</h1>
 
 <p align="center">
-  <strong>The Ultimate Multi-Channel AI Twin Platform</strong>
+  <strong>High-Performance Multi-Channel AI Twin Platform</strong>
 </p>
 
 <p align="center">
@@ -19,17 +19,17 @@
 
 ## 🌟 Overview
 
-**Infinity Chat** transforms your digital communication. It's not just a bot; it's a high-performance, self-hosted AI digital twin that masters your unique texting style and automates your presence across major social channels with absolute precision.
+**Infinity Chat** is the ultimate self-hosted solution for social automation. It masterfully captures your unique texting voice through advanced history analysis and automates your presence across WhatsApp and Instagram with a personalized AI digital twin.
 
-### Why Infinity Chat?
-- **🧠 Identity Capture**: Learns your slang, typos, and personality from chat exports.
-- **👁️ Multimodal Vision**: "Eyes" for your AI—it sees and analyzes images sent by users.
-- **🚀 Dual-Channel Power**: Simultaneous automation for WhatsApp and Instagram.
-- **🎨 Persona Engine**: Switch between "Professional Executive," "Toxic Bestie," or "Gen-Z" modes instantly.
+### Core Capabilities
+- **🧠 Identity Analytics**: Ingests your chat exports to mirror your slang, syntax, and emojis.
+- **👁️ Multimodal Intelligence**: Context-aware vision that "sees" and discusses images.
+- **🚀 Channel Synergy**: Simultaneous management of WhatsApp (Web API) and Instagram (Graph API).
+- **🎭 Persona Matrix**: Hot-swap between "Professional," "Toxic," or "Gen-Z" vibes in real-time.
 
 ---
 
-## 🛠️ Architecture
+## 🛠️ System Architecture
 
 ```mermaid
 graph TD
@@ -47,65 +47,74 @@ graph TD
 
 ---
 
-## 🚀 Quick Start
+## 🚀 Deployment Guide
 
-### 1. Installation
+### 1. Requirements
+- **Node.js**: v18+
+- **Chrome/Brave**: For WhatsApp Puppeteer engine.
+- **AI Access**: API keys for OpenAI, Gemini, or Nvidia.
+
+### 2. Rapid Install
 ```bash
-# Clone and install
+# Clone and enter
 git clone https://github.com/sanjay-m6/infinity-chat.git
 cd infinity-chat
+
+# Install all dependencies
 npm run install:all
-```
 
-### 2. Configuration
-Create a `.env` file with your credentials:
-```env
-PORT=3000
-OPENAI_API_KEY=sk-...
-INSTAGRAM_CLIENT_ID=your_app_id
-INSTAGRAM_CLIENT_SECRET=your_app_secret
-```
-
-### 3. Launch
-```bash
-# Build frontend and start backend
+# Production Build
 npm run build
 npm start
 ```
 
----
-
-## 📸 Instagram Integration Guide
-
-The 1.0 release introduces official **Instagram Graph API** support:
-1.  **Meta Dev Portal**: Create a "Business" app and add "Instagram Graph API".
-2.  **Redirect URI**: Set to `http://localhost:3000/api/instagram/auth/callback`.
-3.  **Live Mode**: Ensure your app is in Live mode or add test users in the dashboard.
-
----
-
-## 🧪 AI Persona Gallery
-
-| Persona | Vibe | Best For |
-| :--- | :--- | :--- |
-| **Toxic Flirty** | 😈 Sass & Charm | Playful interactions and bantering with close friends. |
-| **Professional** | 👔 Cold & Precise | Business inquiries, formal networking, and authority. |
-| **Gen-Z** | 💀 Brainrot & No Cap | Maximum relatability using current internet subculture. |
+### 3. Environment Setup (`.env`)
+```env
+PORT=3000
+OPENAI_API_KEY=sk-...
+INSTAGRAM_CLIENT_ID=your_id
+INSTAGRAM_CLIENT_SECRET=your_secret
+```
 
 ---
 
-## 💻 Tech Stack
+## 📸 Instagram Graph API Integration
 
-- **Frontend**: React 18, Vite, Tailwind CSS, Lucide Icons.
-- **Backend**: Node.js, Express, Socket.io.
-- **Automation**: Puppeteer (WhatsApp), Official Graph API (Instagram).
-- **Intelligence**: OpenAI SDK (compatible with Nvidia/OpenRouter).
+Infinity Chat 1.0 supports the official Instagram Graph API for enterprise-grade reliability:
+
+1.  **Meta Port**: Create a "Business" app and activate "Instagram Graph API".
+2.  **Callback URL**: Set to `your-domain/api/instagram/auth/callback`.
+3.  **Permissions**: Request `instagram_basic`, `instagram_manage_messages`.
 
 ---
 
-## 📝 License & Security
+## 🧠 Training & Memory
 
-- **Dual Licensed**: MIT / Personal Use.
-- **Privacy**: All sessions and logs are stored locally. No mid-stream data collection.
+### How the AI Learns
+1.  **Export**: Download your chat history as `.txt` files from WhatsApp.
+2.  **Ingest**: Upload files via the dashboard.
+3.  **Weighting**: Mark "Closest Person" files to refine style accuracy.
+4.  **Adaptation**: The AI continuously refines its response logic based on persona rules.
 
-Built with 🖤 by **Infinity Team**.
+### AI Persona Gallery
+- **Toxic Flirty**: High-energy, sarcastic charm for close social circles.
+- **Professional**: Authority-driven, precise corporate communication.
+- **Gen-Z**: Unhinged brainrot, slang-heavy, and relatable.
+
+---
+
+## 💻 Technical Stack
+
+- **UI**: React 18, Vite, Tailwind CSS v4, Lucide Icons.
+- **Engine**: Node.js, Express, Socket.io (Real-time bridge).
+- **API**: Official Instagram Graph API & WhatsApp Web.js.
+- **Intelligence**: OpenAI SDK (Nvidia/Gemini compatibility).
+
+---
+
+## 📄 Licensing & Privacy
+
+- **License**: MIT
+- **Privacy Enforcement**: End-to-end local processing. Session data and chat logs never leave your server.
+
+Built with 🖤 by **Sanjay**.
