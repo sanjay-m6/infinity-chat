@@ -128,7 +128,6 @@ Reply once, as a real human in a WhatsApp chat. One short message. Same tone and
       { role: "user", content: userPrompt },
     ],
   });
-  console.log(response.output_text);
 
   return response.output_text;
 }

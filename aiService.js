@@ -206,7 +206,6 @@ async function getReply(folderPath, userMessage, conversationHistory = [], media
 
                 let userContent = userMessage;
                 if (media?.data && media?.mimetype?.startsWith('image/')) {
-                    console.log(`[AI] Processing image for ${settings.activeProvider}... (mimetype: ${media.mimetype}, data length: ${media.data.length})`);
                     // Try multimodal format for Nvidia (models like Qwen-VL support this)
                     userContent = [
                         { type: 'text', text: userMessage || 'Analyze this image.' },
